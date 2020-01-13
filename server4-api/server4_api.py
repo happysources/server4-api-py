@@ -102,5 +102,5 @@ if __name__ == '__main__':
 
 	import pprint
 
-	AI = Server4Api(config_file='etc/serverapi.cfg')
+	API = Server4Api(config_file='etc/serverapi.cfg')
 	pprint.pprint(API.db_select('SELECT * FROM cz_data LIMIT 2'))
