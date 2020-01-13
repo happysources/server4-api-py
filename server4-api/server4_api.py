@@ -7,6 +7,7 @@ Server 4 API
 $ apt-get install python3 python3-mysqldb
 """
 
+import os.path
 import time
 import configparser
 import MySQLdb
@@ -21,11 +22,15 @@ class Server4Api(object):
 
 		config = self.__read_config(config_file)
 		self._cursor = self.__db_init(config)
+
 		self.data_init()
 
 
 	def __read_config(self, config_file):
 		""" read config """
+
+		if not os.path.isfile(config_file):
+			return None
 
 		# config
 		config = configparser.ConfigParser()
@@ -37,11 +42,34 @@ class Server4Api(object):
 	def __db_init(self, config):
 		""" db init """
 
+		cursor = {}
+
+		# read only cursor
+		cursor['ro'] = self.__db_cursor(config, 'ro')
+
+		# modify cursor
+		cursor['modify'] = self.__db_cursor(config, 'modify')
+		
+		return cursor
+
+
+	def __db_cursor(self, config=None, user_type='ro'):
+		""" db cursor """
+
+		if not config:
+			return None
+
+		user = 'user_%s' % user_type
+		passwd = 'passwd_%s' % user_type
+
 		# db config
-		db_user = config.get('db', 'user')
-		db_passwd = config.get('db', 'passwd')
+		db_user = config.get('db', user)
+		db_passwd = config.get('db', passwd)
 		db_db = config.get('db', 'db')
 		db_host = config.get('db', 'host')
+
+		if not db_user:
+			return None
 
 		# db connect
 		database = MySQLdb.connect(\
@@ -61,18 +89,42 @@ class Server4Api(object):
 		return
 
 
-	def db_select(self, sql='', param=()):
+	def __db_execute(self, sql='', param=(), cursor=None):
 		""" db select """
 
+		if not cursor:
+			return 0, None
+
 		if param:
-			found = self._cursor.execute(sql % param)
+			found = cursor.execute(sql % param)
 		else:
-			found = self._cursor.execute(sql)
+			found = cursor.execute(sql)
 
 		if found == 0:
 			return found, None
 
-		return found, self._cursor.fetchall()
+		return found, cursor.fetchall()
+
+
+	def db_select(self, sql='', param=()):
+		""" db select """
+		return self.__db_execute(sql, param, self._cursor['ro'])
+
+	def db_sql(self, sql, param=()):
+		""" db sql """
+		return self.__db_execute(sql, param, self._cursor['modify'])
+
+	def db_update(self, sql, param=()):
+		""" db update """
+		return self.db_sql(sql, param)
+
+	def db_insert(self, sql, param=()):
+		""" db insert """
+		return self.db_sql(sql, param)
+
+	def db_delete(self, sql, param=()):
+		""" db delete """
+		return self.db_sql(sql, param)
 
 
 	def time_ms(self, start_time=0):
