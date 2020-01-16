@@ -45,15 +45,15 @@ class Server4Api(object):
 		cursor = {}
 
 		# read only cursor
-		cursor['ro'] = self.__db_cursor(config, 'ro')
+		cursor['dql'] = self.__db_cursor(config, 'dql')
 
-		# modify cursor
-		cursor['modify'] = self.__db_cursor(config, 'modify')
-		
+		# dml (modify) cursor
+		cursor['dml'] = self.__db_cursor(config, 'dml')
+
 		return cursor
 
 
-	def __db_cursor(self, config=None, user_type='ro'):
+	def __db_cursor(self, config=None, user_type='dql'):
 		""" db cursor """
 
 		if not config:
@@ -108,11 +108,11 @@ class Server4Api(object):
 
 	def db_select(self, sql='', param=()):
 		""" db select """
-		return self.__db_execute(sql, param, self._cursor['ro'])
+		return self.__db_execute(sql, param, self._cursor['dql'])
 
 	def db_sql(self, sql, param=()):
 		""" db sql """
-		return self.__db_execute(sql, param, self._cursor['modify'])
+		return self.__db_execute(sql, param, self._cursor['dml'])
 
 	def db_update(self, sql, param=()):
 		""" db update """
@@ -125,6 +125,13 @@ class Server4Api(object):
 	def db_delete(self, sql, param=()):
 		""" db delete """
 		return self.db_sql(sql, param)
+
+
+	def db_close(self):
+		""" db close """
+
+		for cursor_name in self._cursor:
+			self._cursor[cursor_name].close()
 
 
 	def time_ms(self, start_time=0):
