@@ -1,0 +1,52 @@
+sudo: required
+language: python
+python:
+  - "3.5"
+#  - "3.6"      # current default Python on Travis CI
+#  - "3.7"
+#  - "3.7-dev"  # 3.7 development branch
+#  - "3.8-dev"  # 3.8 development branch
+#  - "nightly"  # nightly build
+
+services:
+  - mysql
+
+env:
+  - PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages/:$PWD:$PWD/server4-api/
+
+#cache: pip
+
+branches:
+  only:
+  - master
+  - develop
+  - feature/*
+
+install:
+  - sudo apt-get install -y pylint3
+  - sudo apt-get install -y python3-mysqldb python3-pip 
+  - sudo dpkg -L python3-mysqldb
+  - sudo pip3 install --upgrade pip
+  - sudo pip3 install -U pytest
+  - sudo pip3 install -r requirements.txt
+
+before_script:
+  - wget https://raw.githubusercontent.com/happysources/mysql-wrapper-py/develop/test_db.sql
+  - wget https://raw.githubusercontent.com/happysources/mysql-wrapper-py/develop/mysqlwrapper/mysqlwrapper_util.py
+  - wget https://raw.githubusercontent.com/happysources/mysql-wrapper-py/develop/mysqlwrapper/mysqlwrapper.py
+  - export PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages/:$PWD:$PWD/server4-api
+  - mysql -u root < test_db.sql
+
+# command to run tests
+script:
+  - echo "pylint3 --errors-only server4-api/*.py ... "
+  - pylint3 --errors-only server4-api/*.py
+
+#  - echo "pytest ... "
+#  - pytest
+ 
+  - echo "run server4_api.py ... "
+  - python3 server4-api/server4_api.py
+
+  - echo "run examples ... "
+  - python3 test/example/basic_example.py

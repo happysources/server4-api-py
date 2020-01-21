@@ -1,4 +1,5 @@
-setuptools >= 21.0.0
+setuptools
 flask
 flask_restful
 sentry-sdk[flask]
+mysqlclient
