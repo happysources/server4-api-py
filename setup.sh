@@ -80,7 +80,7 @@ sudo mkdir -p $INST_DIR
 echo "done."
 
 echo -n "* script install ... "
-for pyfile in `find ${TMP_DIR} | grep "\.py" | grep -v '__pycache__' | grep -v "\.pyc" | grep -v "pylintrc" | grep -v "test/"`; do 
+for pyfile in `find ${TMP_DIR} | grep "\.py" | grep -v '__pycache__' | grep -v "\.pyc" | grep -v "pylintrc" | grep -v "__init__" | grep -v "test/"`; do 
 	sudo cp -v $pyfile $INST_DIR/.; 
 done;
 echo "done."
