@@ -54,15 +54,32 @@ class Server4Api(object):
 		return timems
 
 
-	def dial_name(self, data, found):
-		""" dial name """
+	def db_dial_id(self, table_name='', col_id='', col_value=''):
+		""" Convert data from table to strurcture {id:value} (max limit 100) """
+		return self.__db_dial(table_name, col_id, col_value, 'id_value')
+
+	def db_dial_value(self, table_name='', col_id='', col_value=''):
+		""" Convert data from table to strurcture {value:id} (max limit 100) """
+		return self.__db_dial(table_name, col_id, col_value, 'value_id')
+
+	def __db_dial(self, table_name='', col_id='', col_value='', dial_type='id_value'):
+		""" Convert data from table to strurcture {id:value} (max limit 100) """
+
+		# select data from table
+		found, data = self.db_select(table_name=table_name, where_dict={},\
+			column_list=[col_id, col_value], limit=100)
+
+		if found == 0:
+			return {}
 
 		ret = {}
-		if found == 0:
-			return ret
-
 		for line in data:
-			ret[line['name']] = line['id']
+
+			if dial_type == 'id_value':
+				ret[line[col_value]] = line[col_id]
+				continue
+
+			ret[line[col_id]] = line[col_value]
 
 		return ret
 
