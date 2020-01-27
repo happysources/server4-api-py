@@ -34,6 +34,7 @@ before_script:
   - wget https://raw.githubusercontent.com/happysources/mysql-wrapper-py/develop/test_db.sql
   - wget https://raw.githubusercontent.com/happysources/mysql-wrapper-py/develop/mysqlwrapper/mysqlwrapper_util.py
   - wget https://raw.githubusercontent.com/happysources/mysql-wrapper-py/develop/mysqlwrapper/mysqlwrapper.py
+  - wget https://raw.githubusercontent.com/happysources/response-api-py/develop/response_api/response_api.py
   - export PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages/:$PWD:$PWD/server4_api
   - mysql -u root < test_db.sql
 
