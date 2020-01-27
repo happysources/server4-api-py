@@ -15,13 +15,43 @@ import response_api
 from validate_data import validate_str, validate_int, validate_float
 
 
+def _test_input_param_input(def_dict, value_dict):
+
+	error_type = None
+	error_msg = None
+
+	if not value_dict or not def_dict:
+		error_type = 'type_err'
+		error_msg = 'Parametrs must be a input'
+
+	if len(value_dict) > len(def_dict):
+		error_type = 'length_error'
+		error_msg = 'Undefinied params'
+
+	return error_type, error_msg
+
+
+def _read_config(config_file):
+	""" read config """
+
+	if not os.path.isfile(config_file):
+		return None
+
+	# config
+	config = configparser.ConfigParser()
+	config.read(config_file)
+
+	return config
+
+
+
 class Server4Api(object):
 	""" Server API """
 
 	def __init__(self, config_file='serverapi.cfg'):
 		""" api init """
 
-		config = self.__read_config(config_file)
+		config = _read_config(config_file)
 		self.__cursor = self.__db_init(config)
 		self.response = response_api.ResponseAPI()
 
@@ -33,18 +63,6 @@ class Server4Api(object):
 
 		return
 
-
-	def __read_config(self, config_file):
-		""" read config """
-
-		if not os.path.isfile(config_file):
-			return None
-
-		# config
-		config = configparser.ConfigParser()
-		config.read(config_file)
-
-		return config
 
 
 	def time_ms(self, start_time=0):
@@ -193,46 +211,33 @@ class Server4Api(object):
 
 		start_time = time.time()
 
-		# validate input data
-		error_type = None
-		error_msg = None
-
-		if not value_dict or not def_dict:
-			error_type = 'type_err'
-			error_msg = 'Parametrs must be a input'
-
-		if len(value_dict) > len(def_dict):
-			error_type = 'length_error'
-			error_msg = 'Undefinied params'
+		# test for input value
+		error_type, error_msg = _test_input_param_input(def_dict, value_dict)
 
 		try:
 			for param_name in value_dict.keys():
-				__def = def_dict.get(param_name)
-				if not __def:
-					raise ValueError(('unknown parametr {param_name}').format(param_name=param_name))
+				_def = def_dict.get(param_name)
+				if not _def:
+					raise ValueError(('Unknown parametr {param_name}').format(param_name=param_name))
 
-				param_type = __def.get('type', 'str')
+				param_type = _def.get('type', 'str')
 				param_value = value_dict.get(param_name)
-				param_value_min = __def.get('min')
-				param_value_max = __def.get('max')
-				param_required = __def.get('req')
-				param_array = __def.get('array')
 
 				if param_type == 'int':
-					validate_int(param_value, param_value_min, param_value_max, param_required, param_name)
+					validate_int(param_value, _def.get('min'), _def('max'), _def('req'), param_name)
+
 				elif param_type == 'float':
-					validate_float(param_value, param_value_min, param_value_max, param_required, param_name)
+					validate_float(param_value, _def.get('min'), _def('max'), _def('req'), param_name)
 
 				elif param_type == 'email':
-					validate_str(param_value, 3, 100, param_required, param_name)
-					#validate_email(param_value, param_required, param_name)
+					validate_str(param_value, 3, 100, _def('req'), param_name)
+					#validate_email(param_value, _def('req'), param_name)
+					continue
 
-				elif param_type == 'array' and param_required:
-					if param_value not in param_array:
-						raise ValueError(('{param_name} value out of array').format(param_name=param_name))
+				elif param_type == 'array' and _def('req') and param_value not in _def('array'):
+					raise ValueError(('{param_name} value out of array').format(param_name=param_name))
 
-				else:
-					validate_str(param_value, param_value_min, param_value_max, param_required, param_name)
+				validate_str(param_value, _def.get('min'), _def.get('max'), _def('req'), param_name)
 
 		except TypeError as type_err:
 			error_type = 'type_error'
