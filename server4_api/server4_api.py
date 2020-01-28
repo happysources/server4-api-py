@@ -165,7 +165,7 @@ class Server4Api(object):
 		return database.cursor()
 
 
-	def db_select(self, table_name, where_dict, column_list=[], limit=0):
+	def db_select(self, table_name, where_dict, column_list=(), limit=0):
 		""" db select """
 		return self.__cursor['dql'].select(table_name, where_dict, column_list, limit)
 
@@ -181,8 +181,12 @@ class Server4Api(object):
 		""" db insert id """
 		return self.__cursor['dml'].insert_id()
 
-	def db_delete(self, table_name=None, where_dict={}, limit=0):
+	def db_delete(self, table_name=None, where_dict=None, limit=0):
 		""" db delete """
+
+		if not where_dict:
+			where_dict = {}
+
 		return self.__cursor['dml'].delete(table_name, where_dict, limit)
 
 	def db_execute_dml(self, sql, param=()):
