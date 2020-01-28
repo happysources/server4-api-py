@@ -44,6 +44,63 @@ def _read_config(config_file):
 	return config
 
 
+def _db_init(config):
+	""" db init """
+
+	cursor = {}
+
+	if 'db' not in config.sections():
+		return cursor
+
+	# read only cursor
+	cursor['dql'] = _db_cursor(config, 'dql')
+
+	# dml (modify) cursor
+	cursor['dml'] = _db_cursor(config, 'dml')
+
+	return cursor
+
+
+
+def _db_cursor(config=None, user_type='dql'):
+	""" db cursor """
+
+	if not config:
+		return None
+
+	user = 'user_%s' % user_type
+	passwd = 'passwd_%s' % user_type
+
+	# db config
+	db_user = config.get('db', user)
+	db_passwd = config.get('db', passwd)
+	db_db = config.get('db', 'db')
+	db_host = config.get('db', 'host')
+
+	if not db_user:
+		return None
+
+	db_param = {\
+		'dict_cursor':1,\
+		'autocommit':1,\
+		'dummy':1,\
+		'charset':config.get('db', 'charset'),\
+		'port':config.getint('db', 'port'),\
+		'debug':config.getint('db', 'debug'),\
+	}
+
+	# db connect
+	database = mysqlwrapper.Connect(\
+		user=db_user,\
+		passwd=db_passwd,\
+		db=db_db,\
+		host=db_host,\
+		param=db_param)
+
+	# db cursor
+	return database.cursor()
+
+
 
 class Server4Api(object):
 	""" Server API """
@@ -51,8 +108,9 @@ class Server4Api(object):
 	def __init__(self, config_file='serverapi.cfg'):
 		""" api init """
 
+		self._pylint_fixed = 0
 		config = _read_config(config_file)
-		self.__cursor = self.__db_init(config)
+		self.__cursor = _db_init(config)
 		self.response = response_api.ResponseAPI()
 
 		self.data_init()
@@ -61,12 +119,15 @@ class Server4Api(object):
 	def data_init(self):
 		""" data init """
 
-		return
+		self._pylint_fixed = 0
 
+		return
 
 
 	def time_ms(self, start_time=0):
 		""" time ms """
+
+		self._pylint_fixed = 0
 
 		timems = int((time.time() - start_time) * 1000)
 		if timems == 0:
@@ -109,60 +170,6 @@ class Server4Api(object):
 
 	# --- MYSQL DATABASE ---
 
-	def __db_init(self, config):
-		""" db init """
-
-		cursor = {}
-
-		if 'db' not in config.sections():
-			return cursor
-
-		# read only cursor
-		cursor['dql'] = self.__db_cursor(config, 'dql')
-
-		# dml (modify) cursor
-		cursor['dml'] = self.__db_cursor(config, 'dml')
-
-		return cursor
-
-
-	def __db_cursor(self, config=None, user_type='dql'):
-		""" db cursor """
-
-		if not config:
-			return None
-
-		user = 'user_%s' % user_type
-		passwd = 'passwd_%s' % user_type
-
-		# db config
-		db_user = config.get('db', user)
-		db_passwd = config.get('db', passwd)
-		db_db = config.get('db', 'db')
-		db_host = config.get('db', 'host')
-
-		if not db_user:
-			return None
-
-		db_param = {\
-			'dict_cursor':1,\
-			'autocommit':1,\
-			'dummy':1,\
-			'charset':config.get('db', 'charset'),\
-			'port':config.getint('db', 'port'),\
-			'debug':config.getint('db', 'debug'),\
-		}
-
-		# db connect
-		database = mysqlwrapper.Connect(\
-			user=db_user,\
-			passwd=db_passwd,\
-			db=db_db,\
-			host=db_host,\
-			param=db_param)
-
-		# db cursor
-		return database.cursor()
 
 
 	def db_select(self, table_name, where_dict, column_list=(), limit=0):
@@ -199,6 +206,7 @@ class Server4Api(object):
 
 	def db_now(self):
 		""" db now """
+		self._pylint_fixed = 0
 		return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
 
 	def db_close(self):
