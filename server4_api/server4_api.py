@@ -150,13 +150,14 @@ class Server4Api(object):
 		""" Convert data from table to strurcture {id:value} (max limit 100) """
 
 		# select data from table
-		found, data = self.db_select(table_name=table_name, where_dict={},\
-			column_list=[col_id, col_value], limit=100)
+		found = self.db_execute_dql('SELECT `%s`, `%s` FROM %s LIMIT 100' % \
+			(col_id, col_value, table_name))
 
 		if found == 0:
 			return {}
 
 		ret = {}
+		data = self.db_fetchall_dql()
 		for line in data:
 
 			if dial_type == 'id_value':
@@ -176,9 +177,11 @@ class Server4Api(object):
 		""" db select """
 		return self.__cursor['dql'].select(table_name, where_dict, column_list, limit)
 
+
 	def db_update(self, table_name, value_dict, where_dict, limit=0):
 		""" db update """
 		return self.__cursor['dml'].update(table_name, value_dict, where_dict, limit)
+
 
 	def db_insert(self, table_name, value_dict):
 		""" db insert """
@@ -188,6 +191,7 @@ class Server4Api(object):
 		""" db insert id """
 		return self.__cursor['dml'].insert_id()
 
+
 	def db_delete(self, table_name=None, where_dict=None, limit=0):
 		""" db delete """
 
@@ -196,6 +200,7 @@ class Server4Api(object):
 
 		return self.__cursor['dml'].delete(table_name, where_dict, limit)
 
+
 	def db_execute_dml(self, sql, param=()):
 		""" db sql """
 		return self.__cursor['dml'].execute(sql, param)
@@ -203,6 +208,16 @@ class Server4Api(object):
 	def db_execute_dql(self, sql, param=()):
 		""" db sql """
 		return self.__cursor['dql'].execute(sql, param)
+
+
+	def db_fetchall_dql(self):
+		""" db fetchall """
+		return self.__cursor['dql'].fetchall()
+
+	def db_fetchone_dql(self):
+		""" db fetchall """
+		return self.__cursor['dql'].fetchone()
+
 
 	def db_now(self):
 		""" db now """
@@ -235,21 +250,23 @@ class Server4Api(object):
 				param_type = _def.get('type', 'str')
 				param_value = value_dict.get(param_name)
 
-				if param_type == 'int':
-					validate_int(param_value, _def.get('min'), _def('max'), _def('req'), param_name)
-
-				elif param_type == 'float':
-					validate_float(param_value, _def.get('min'), _def('max'), _def('req'), param_name)
-
-				elif param_type == 'email':
-					validate_str(param_value, 3, 100, _def('req'), param_name)
-					#validate_email(param_value, _def('req'), param_name)
+				if param_type in ('int', 'integer', 'number'):
+					validate_int(param_value, _def.get('min'), _def.get('max'), _def.get('req'), param_name)
 					continue
 
-				elif param_type == 'array' and _def('req') and param_value not in _def('array'):
+				elif param_type == 'float':
+					validate_float(param_value, _def.get('min'), _def.get('max'), _def.get('req'), param_name)
+					continue
+
+				elif param_type in ('email', 'mail'):
+					validate_str(param_value, 3, 100, _def.get('req'), param_name)
+					#validate_email(param_value, _def.get('req'), param_name)
+					continue
+
+				elif param_type == 'array' and _def.get('req') and param_value not in _def.get('array'):
 					raise ValueError(('{param_name} value out of array').format(param_name=param_name))
 
-				validate_str(param_value, _def.get('min'), _def.get('max'), _def('req'), param_name)
+				validate_str(param_value, _def.get('min'), _def.get('max'), _def.get('req'), param_name)
 
 		except TypeError as type_err:
 			error_type = 'type_error'
