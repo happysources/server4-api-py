@@ -29,12 +29,15 @@ install:
 
 before_script:
   - export PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages/:$PWD:$PWD/server4_api
+
   - wget -O - https://raw.githubusercontent.com/erikni/logni.py/develop/setup.sh | bash
   - wget -O - https://raw.githubusercontent.com/happysources/response-api-py/develop/setup.sh | bash
   - wget -O - https://raw.githubusercontent.com/happysources/validate-data-py/develop/setup.sh | bash
   - wget -O - https://raw.githubusercontent.com/happysources/mysql-wrapper-py/develop/setup.sh | bash
   - wget -O - https://raw.githubusercontent.com/happysources/server4-api-py/develop/setup.sh | bash
   - wget -O - https://raw.githubusercontent.com/happysources/memcache-wrapper-py/develop/setup.sh | bash
+
+  - wget https://raw.githubusercontent.com/happysources/mysql-wrapper-py/develop/test_db.sql
   - mysql -u root < test_db.sql
 
 # command to run tests

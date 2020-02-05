@@ -14,6 +14,7 @@ import mysqlwrapper
 import memcachewrapper
 import response_api
 from validate_data import validate_str, validate_int, validate_float
+from logni import log
 
 
 def _test_input_param_input(def_dict, value_dict):
@@ -111,8 +112,8 @@ class Server4Api(object):
 
 		self._pylint_fixed = 0
 		config = _read_config(config_file)
-		server_name = config.get('server','server_name')
-		
+		server_name = config.get('server', 'server_name')
+
 		# db
 		self.__cursor = _db_init(config)
 
@@ -124,7 +125,7 @@ class Server4Api(object):
 				config.getint('memcache', 'port'),\
 				server_name,\
 				config.getint('memcache', 'debug'))
-				
+
 		# response api
 		self.response = response_api.ResponseAPI(server_name)
 
@@ -192,7 +193,7 @@ class Server4Api(object):
 		""" db select """
 
 		if 'dql' not in self.__cursor:
-			log.ni('mysql cursor="%s" not exist', ('dql',), ERR=2)
+			log.error('mysql cursor="%s" not exist', ('dql',), priority=2)
 			return (0, None)
 
 		return self.__cursor['dql'].select(table_name, where_dict, column_list, limit)
@@ -202,7 +203,7 @@ class Server4Api(object):
 		""" db update """
 
 		if 'dml' not in self.__cursor:
-			log.ni('mysql cursor="%s" not exist', ('dml',), ERR=2)
+			log.error('mysql cursor="%s" not exist', ('dml',), priority=2)
 			return 0
 
 		return self.__cursor['dml'].update(table_name, value_dict, where_dict, limit)
@@ -212,7 +213,7 @@ class Server4Api(object):
 		""" db insert """
 
 		if 'dml' not in self.__cursor:
-			log.ni('mysql cursor="%s" not exist', ('dml',), ERR=2)
+			log.error('mysql cursor="%s" not exist', ('dml',), priority=2)
 			return 0
 
 		return self.__cursor['dml'].insert(table_name, value_dict)
@@ -221,7 +222,7 @@ class Server4Api(object):
 		""" db insert id """
 
 		if 'dml' not in self.__cursor:
-			log.ni('mysql cursor="%s" not exist', ('dml',), ERR=2)
+			log.error('mysql cursor="%s" not exist', ('dml',), priority=2)
 			return 0
 
 		return self.__cursor['dml'].insert_id()
@@ -234,7 +235,7 @@ class Server4Api(object):
 			where_dict = {}
 
 		if 'dml' not in self.__cursor:
-			log.ni('mysql cursor="%s" not exist', ('dml',), ERR=2)
+			log.error('mysql cursor="%s" not exist', ('dml',), priority=2)
 			return 0
 
 		return self.__cursor['dml'].delete(table_name, where_dict, limit)
@@ -244,7 +245,7 @@ class Server4Api(object):
 		""" db sql """
 
 		if 'dml' not in self.__cursor:
-			log.ni('mysql cursor="%s" not exist', ('dml',), ERR=2)
+			log.error('mysql cursor="%s" not exist', ('dml',), priority=2)
 			return []
 
 		return self.__cursor['dml'].execute(sql, param)
@@ -253,7 +254,7 @@ class Server4Api(object):
 		""" db sql """
 
 		if 'dql' not in self.__cursor:
-			log.ni('mysql cursor="%s" not exist', ('dql',), ERR=2)
+			log.error('mysql cursor="%s" not exist', ('dql',), priority=2)
 			return []
 
 		return self.__cursor['dql'].execute(sql, param)
@@ -263,7 +264,7 @@ class Server4Api(object):
 		""" db fetchall """
 
 		if 'dql' not in self.__cursor:
-			log.ni('mysql cursor="%s" not exist', ('dql',), ERR=2)
+			log.error('mysql cursor="%s" not exist', ('dql',), priority=2)
 			return []
 
 		return self.__cursor['dql'].fetchall()
@@ -272,7 +273,7 @@ class Server4Api(object):
 		""" db fetchall """
 
 		if 'dql' not in self.__cursor:
-			log.ni('mysql cursor="%s" not exist', ('dql',), ERR=2)
+			log.error('mysql cursor="%s" not exist', ('dql',), priority=2)
 			return []
 
 		return self.__cursor['dql'].fetchone()
