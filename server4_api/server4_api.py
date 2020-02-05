@@ -11,6 +11,7 @@ import os.path
 import time
 import configparser
 import mysqlwrapper
+import memcachewrapper
 import response_api
 from validate_data import validate_str, validate_int, validate_float
 
@@ -110,8 +111,22 @@ class Server4Api(object):
 
 		self._pylint_fixed = 0
 		config = _read_config(config_file)
+		server_name = config.get('server','server_name')
+		
+		# db
 		self.__cursor = _db_init(config)
-		self.response = response_api.ResponseAPI()
+
+		# cache
+		self.cache = None
+		if 'memcache' in config.sections():
+			self.cache = memcachewrapper.MemcacheWrapper(\
+				config.get('memcache', 'host'),\
+				config.getint('memcache', 'port'),\
+				server_name,\
+				config.getint('memcache', 'debug'))
+				
+		# response api
+		self.response = response_api.ResponseAPI(server_name)
 
 		self.data_init()
 
@@ -175,20 +190,40 @@ class Server4Api(object):
 
 	def db_select(self, table_name, where_dict, column_list=(), limit=0):
 		""" db select """
+
+		if 'dql' not in self.__cursor:
+			log.ni('mysql cursor="%s" not exist', ('dql',), ERR=2)
+			return (0, None)
+
 		return self.__cursor['dql'].select(table_name, where_dict, column_list, limit)
 
 
 	def db_update(self, table_name, value_dict, where_dict, limit=0):
 		""" db update """
+
+		if 'dml' not in self.__cursor:
+			log.ni('mysql cursor="%s" not exist', ('dml',), ERR=2)
+			return 0
+
 		return self.__cursor['dml'].update(table_name, value_dict, where_dict, limit)
 
 
 	def db_insert(self, table_name, value_dict):
 		""" db insert """
+
+		if 'dml' not in self.__cursor:
+			log.ni('mysql cursor="%s" not exist', ('dml',), ERR=2)
+			return 0
+
 		return self.__cursor['dml'].insert(table_name, value_dict)
 
 	def db_insert_id(self):
 		""" db insert id """
+
+		if 'dml' not in self.__cursor:
+			log.ni('mysql cursor="%s" not exist', ('dml',), ERR=2)
+			return 0
+
 		return self.__cursor['dml'].insert_id()
 
 
@@ -198,24 +233,48 @@ class Server4Api(object):
 		if not where_dict:
 			where_dict = {}
 
+		if 'dml' not in self.__cursor:
+			log.ni('mysql cursor="%s" not exist', ('dml',), ERR=2)
+			return 0
+
 		return self.__cursor['dml'].delete(table_name, where_dict, limit)
 
 
 	def db_execute_dml(self, sql, param=()):
 		""" db sql """
+
+		if 'dml' not in self.__cursor:
+			log.ni('mysql cursor="%s" not exist', ('dml',), ERR=2)
+			return []
+
 		return self.__cursor['dml'].execute(sql, param)
 
 	def db_execute_dql(self, sql, param=()):
 		""" db sql """
+
+		if 'dql' not in self.__cursor:
+			log.ni('mysql cursor="%s" not exist', ('dql',), ERR=2)
+			return []
+
 		return self.__cursor['dql'].execute(sql, param)
 
 
 	def db_fetchall_dql(self):
 		""" db fetchall """
+
+		if 'dql' not in self.__cursor:
+			log.ni('mysql cursor="%s" not exist', ('dql',), ERR=2)
+			return []
+
 		return self.__cursor['dql'].fetchall()
 
 	def db_fetchone_dql(self):
 		""" db fetchall """
+
+		if 'dql' not in self.__cursor:
+			log.ni('mysql cursor="%s" not exist', ('dql',), ERR=2)
+			return []
+
 		return self.__cursor['dql'].fetchone()
 
 

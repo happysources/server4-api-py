@@ -23,20 +23,18 @@ branches:
   - feature/*
 
 install:
-  - sudo apt-get install -y pylint3
-  - sudo apt-get install -y python3-mysqldb python3-pip 
-  - sudo dpkg -L python3-mysqldb
+  - sudo apt-get install -y python3-mysqldb python3-pip pylint3 python3 python3-pytest wget
   - sudo pip3 install --upgrade pip
-  - sudo pip3 install -U pytest
   - sudo pip3 install -r requirements.txt
 
 before_script:
-  - wget https://raw.githubusercontent.com/happysources/mysql-wrapper-py/develop/test_db.sql
-  - wget https://raw.githubusercontent.com/happysources/mysql-wrapper-py/develop/mysqlwrapper/mysqlwrapper_util.py
-  - wget https://raw.githubusercontent.com/happysources/mysql-wrapper-py/develop/mysqlwrapper/mysqlwrapper.py
-  - wget https://raw.githubusercontent.com/happysources/response-api-py/develop/response_api/response_api.py
-  - wget https://raw.githubusercontent.com/happysources/validate-data-py/develop/validate_data/validate_data.py
   - export PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages/:$PWD:$PWD/server4_api
+  - wget -O - https://raw.githubusercontent.com/erikni/logni.py/develop/setup.sh | bash
+  - wget -O - https://raw.githubusercontent.com/happysources/response-api-py/develop/setup.sh | bash
+  - wget -O - https://raw.githubusercontent.com/happysources/validate-data-py/develop/setup.sh | bash
+  - wget -O - https://raw.githubusercontent.com/happysources/mysql-wrapper-py/develop/setup.sh | bash
+  - wget -O - https://raw.githubusercontent.com/happysources/server4-api-py/develop/setup.sh | bash
+  - wget -O - https://raw.githubusercontent.com/happysources/memcache-wrapper-py/develop/setup.sh | bash
   - mysql -u root < test_db.sql
 
 # command to run tests
@@ -45,7 +43,7 @@ script:
   - pylint3 --errors-only server4_api/*.py
 
 #  - echo "pytest ... "
-#  - pytest
+#  - py.test-3
  
   - echo "run server4_api.py ... "
   - python3 server4_api/server4_api.py
