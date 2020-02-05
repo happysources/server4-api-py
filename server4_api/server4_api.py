@@ -3,8 +3,6 @@
 
 """
 Server 4 API
-
-$ apt-get install python3 python3-mysqldb
 """
 
 import os.path

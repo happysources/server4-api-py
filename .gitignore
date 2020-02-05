@@ -1,3 +1,7 @@
+/memcachewrapper.py
+/response_api.py
+/server4_api.py
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
