@@ -12,7 +12,7 @@ services:
   - mysql
 
 env:
-  - PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages/:$PWD:$PWD/server4_api/
+  - PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages/:/usr/local/lib/python3/dist-packages:$PWD:$PWD/server4_api/
 
 #cache: pip
 
@@ -28,7 +28,7 @@ install:
   - sudo pip3 install -r requirements.txt
 
 before_script:
-  - export PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages/:$PWD:$PWD/server4_api
+  - export PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages/:/usr/local/lib/python3/dist-packages:$PWD:$PWD/server4_api
 
   - wget -O - https://raw.githubusercontent.com/erikni/logni.py/develop/setup.sh | bash
   - wget -O - https://raw.githubusercontent.com/happysources/response-api-py/develop/setup.sh | bash
