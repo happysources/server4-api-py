@@ -5,7 +5,7 @@
 Server 4 API
 """
 
-import os.path
+import os
 import time
 import configparser
 import mysqlwrapper
@@ -110,7 +110,14 @@ class Server4Api(object):
 
 		self._pylint_fixed = 0
 		config = _read_config(config_file)
-		server_name = config.get('server', 'server_name')
+
+		# server name + env
+		self.server_name = config.get('server', 'server_name')
+		self.server_env = os.environ.get('H4_ENV', 'local')
+
+		# dbg mesg
+		log.debug('Server4Api="%s", env="%s", config="%s" init',\
+			(self.server_name, self.server_env, config_file), priority=1)
 
 		# db
 		self.__cursor = _db_init(config)
@@ -121,13 +128,17 @@ class Server4Api(object):
 			self.cache = memcachewrapper.MemcacheWrapper(\
 				config.get('memcache', 'host'),\
 				config.getint('memcache', 'port'),\
-				server_name,\
+				self.server_name,\
 				config.getint('memcache', 'debug'))
 
 		# response api
-		self.response = response_api.ResponseAPI(server_name)
+		self.response = response_api.ResponseAPI(self.server_name)
 
 		self.data_init()
+
+		# dbg mesg
+		log.info('Server4Api="%s", env="%s", config="%s" init',\
+			(self.server_name, self.server_env, config_file), priority=2)
 
 
 	def data_init(self):
@@ -319,6 +330,11 @@ class Server4Api(object):
 				elif param_type in ('email', 'mail'):
 					validate_str(param_value, 3, 100, _def.get('req'), param_name)
 					#validate_email(param_value, _def.get('req'), param_name)
+					continue
+
+				elif param_type == 'ip':
+					validate_str(param_value, 7, 15, _def.get('req'), param_name)
+					#validate_ip(param_value, _def.get('req'), param_name)
 					continue
 
 				elif param_type == 'array' and _def.get('req') and param_value not in _def.get('array'):

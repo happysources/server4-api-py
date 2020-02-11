@@ -34,7 +34,6 @@ before_script:
   - wget -O - https://raw.githubusercontent.com/happysources/response-api-py/develop/setup.sh | bash
   - wget -O - https://raw.githubusercontent.com/happysources/validate-data-py/develop/setup.sh | bash
   - wget -O - https://raw.githubusercontent.com/happysources/mysql-wrapper-py/develop/setup.sh | bash
-  - wget -O - https://raw.githubusercontent.com/happysources/server4-api-py/develop/setup.sh | bash
   - wget -O - https://raw.githubusercontent.com/happysources/memcache-wrapper-py/develop/setup.sh | bash
 
   - wget https://raw.githubusercontent.com/happysources/mysql-wrapper-py/develop/test_db.sql
@@ -45,6 +44,10 @@ before_script:
 # command to run tests
 script:
   - export PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages/:/usr/local/lib/python3/dist-packages:$PWD:$PWD/server4_api
+
+  - export LOGNI_NAME=server4
+  - export LOGNI_MASK=ALL
+  - export LOGNI_CONSOLE=1
 
   - echo "pylint3 --errors-only server4_api/*.py ... "
   - pylint3 --errors-only server4_api/*.py
