@@ -1,6 +1,10 @@
 /memcachewrapper.py
 /response_api.py
 /server4_api.py
+/mysqlwrapper.py
+/mysqlwrapper_util.py
+/validate_data.py
+/logni
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -21,7 +21,7 @@ def _test_input_param_input(def_dict, value_dict):
 	error_msg = None
 
 	if not value_dict or not def_dict:
-		error_type = 'type_err'
+		error_type = 'type_error'
 		error_msg = 'Parametrs must be a input'
 
 	if len(value_dict) > len(def_dict):
@@ -121,6 +121,7 @@ class Server4Api(object):
 
 		# db
 		self.__cursor = _db_init(config)
+		self._cursor = self.__cursor
 
 		# cache
 		self.cache = None
@@ -226,6 +227,15 @@ class Server4Api(object):
 			return 0
 
 		return self.__cursor['dml'].insert(table_name, value_dict)
+
+	def db_replace(self, table_name, value_dict):
+		""" db replace """
+
+		if 'dml' not in self.__cursor:
+			log.error('mysql cursor="%s" not exist', ('dml',), priority=2)
+			return 0
+
+		return self.__cursor['dml'].replace(table_name, value_dict)
 
 	def db_insert_id(self):
 		""" db insert id """
@@ -338,6 +348,7 @@ class Server4Api(object):
 					continue
 
 				elif param_type == 'array' and _def.get('req') and param_value not in _def.get('array'):
+					log.error('array %s=%s not in %s', (param_name, param_value, _def.get('array')), priority=1)
 					raise ValueError(('{param_name} value out of array').format(param_name=param_name))
 
 				validate_str(param_value, _def.get('min'), _def.get('max'), _def.get('req'), param_name)
@@ -349,6 +360,12 @@ class Server4Api(object):
 		except ValueError as value_err:
 			error_type = 'value_error'
 			error_msg = str(value_err)
+
+			# length error
+			for length_str in (' expected value less than ', ' expected value greater than ',\
+				' expected at least ', ' expected at most '):
+				if error_msg.find(length_str) > -1:
+					error_type = 'length_error'
 
 		if error_type:
 			return self.response.bad_request(\
