@@ -11,8 +11,24 @@ import configparser
 import mysqlwrapper
 import memcachewrapper
 import response_api
-from validate_data import validate_str, validate_int, validate_float
+from validate_data import validate_str, validate_int, validate_float,\
+	validate_email, validate_ip, validate_array
 from logni import log
+
+MYSQLWRAPPER = 1
+MEMCACHEWRAPPER = 1
+
+try:
+	import mysqlwrapper
+except ImportError as import_err:
+	log.debug('mysqlwrapper import error=%s', import_err, priority=4)
+	MYSQLWRAPPER = 0
+
+try:
+	import memcachewrapper
+except ImportError as import_err:
+	log.debug('memcachewrapper import error=%s', import_err, priority=4)
+	MEMCACHEWRAPPER = 0
 
 
 def _test_input_param_input(def_dict, value_dict):
@@ -50,6 +66,10 @@ def _db_init(config):
 	cursor = {}
 
 	if 'db' not in config.sections():
+		return cursor
+
+	if not MYSQLWRAPPER:
+		log.error('mysqlwrapper import error', priority=3)
 		return cursor
 
 	# read only cursor
@@ -121,16 +141,24 @@ class Server4Api(object):
 
 		# db
 		self.__cursor = _db_init(config)
+		self.dql = self.__cursor.get('dql')
+		self.dml = self.__cursor.get('dml')
+
+		# todo: del
 		self._cursor = self.__cursor
 
 		# cache
 		self.cache = None
 		if 'memcache' in config.sections():
-			self.cache = memcachewrapper.MemcacheWrapper(\
-				config.get('memcache', 'host'),\
-				config.getint('memcache', 'port'),\
-				self.server_name,\
-				config.getint('memcache', 'debug'))
+
+			if not MEMCACHEWRAPPER:
+				log.error('memcachewrapper import error', priority=3)	
+			else:
+				self.cache = memcachewrapper.MemcacheWrapper(\
+					config.get('memcache', 'host'),\
+					config.getint('memcache', 'port'),\
+					self.server_name,\
+					config.getint('memcache', 'debug'))
 
 		# response api
 		self.response = response_api.ResponseAPI(self.server_name)
@@ -164,20 +192,25 @@ class Server4Api(object):
 
 	# --- DIAL ---
 
-	def db_dial_id(self, table_name='', col_id='', col_value=''):
-		""" Convert data from table to strurcture {id:value} (max limit 100) """
+	def db_dial_id(self, table_name='', col_id='', col_value='', order_by=None):
+		""" Convert data from table to strurcture {id:value} (max limit 1000) """
 		return self.__db_dial(table_name, col_id, col_value, 'id_value')
 
-	def db_dial_value(self, table_name='', col_id='', col_value=''):
-		""" Convert data from table to strurcture {value:id} (max limit 100) """
-		return self.__db_dial(table_name, col_id, col_value, 'value_id')
+	def db_dial_value(self, table_name='', col_id='', col_value='', order_by=None):
+		""" Convert data from table to strurcture {value:id} (max limit 1000) """
+		return self.__db_dial(table_name, col_id, col_value, 'value_id', order_by)
 
-	def __db_dial(self, table_name='', col_id='', col_value='', dial_type='id_value'):
-		""" Convert data from table to strurcture {id:value} (max limit 100) """
+	def __db_dial(self, table_name='', col_id='', col_value='', dial_type='id_value', order_by=None):
+		""" Convert data from table to strurcture {id:value} (max limit 1000) """
 
+		# order by
+		__order_by = ''
+		if order_by:
+			__order_by = ' ORDER BY `%s` ' % order_by
+			
 		# select data from table
-		found = self.db_execute_dql('SELECT `%s`, `%s` FROM %s LIMIT 100' % \
-			(col_id, col_value, table_name))
+		found = self.db_execute_dql('SELECT `%s`, `%s` FROM %s %s LIMIT 1000' % \
+			(col_id, col_value, table_name, __order_by))
 
 		if found == 0:
 			return {}
@@ -330,28 +363,36 @@ class Server4Api(object):
 				param_value = value_dict.get(param_name)
 
 				if param_type in ('int', 'integer', 'number'):
-					validate_int(param_value, _def.get('min'), _def.get('max'), _def.get('req'), param_name)
+					validate_ret = validate_int(param_value, _def.get('min'),\
+						_def.get('max'), _def.get('req'), param_name)
 					continue
 
 				elif param_type == 'float':
-					validate_float(param_value, _def.get('min'), _def.get('max'), _def.get('req'), param_name)
+					validate_ret = validate_float(param_value, _def.get('min'),\
+						_def.get('max'), _def.get('req'), param_name)
 					continue
 
 				elif param_type in ('email', 'mail'):
-					validate_str(param_value, 3, 100, _def.get('req'), param_name)
-					#validate_email(param_value, _def.get('req'), param_name)
+					validate_ret = validate_email(param_value, _def.get('req'),\
+						param_name)
 					continue
 
 				elif param_type == 'ip':
-					validate_str(param_value, 7, 15, _def.get('req'), param_name)
-					#validate_ip(param_value, _def.get('req'), param_name)
+					validate_ret = validate_ip(param_value, _def.get('req'),\
+						param_name)
 					continue
 
-				elif param_type == 'array' and _def.get('req') and param_value not in _def.get('array'):
-					log.error('array %s=%s not in %s', (param_name, param_value, _def.get('array')), priority=1)
-					raise ValueError(('{param_name} value out of array').format(param_name=param_name))
+				elif param_type == 'array':
+					validate_ret = validate_array(param_value, _def.get('array'),\
+						_def.get('req'), param_name)
+					continue
+				else:
+					validate_ret = validate_str(param_value, _def.get('min'),\
+						_def.get('max'), _def.get('req'), param_name)
 
-				validate_str(param_value, _def.get('min'), _def.get('max'), _def.get('req'), param_name)
+				if not validate_ret:
+					raise ValueError(('{name} is false validate').format(name=name))
+					
 
 		except TypeError as type_err:
 			error_type = 'type_error'
