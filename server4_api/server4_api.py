@@ -8,8 +8,6 @@ Server 4 API
 import os
 import time
 import configparser
-import mysqlwrapper
-import memcachewrapper
 import response_api
 from validate_data import validate_str, validate_int, validate_float,\
 	validate_email, validate_ip, validate_array
@@ -45,6 +43,16 @@ def _test_input_param_input(def_dict, value_dict):
 		error_msg = 'Undefinied params'
 
 	return error_type, error_msg
+
+
+def _length_error(error_msg, error_type):
+
+	for length_str in (' expected value less than ', ' expected value greater than ',\
+		' expected at least ', ' expected at most '):
+		if error_msg.find(length_str) > -1:
+			error_type = 'length_error'
+
+	return error_type
 
 
 def _read_config(config_file):
@@ -132,42 +140,51 @@ class Server4Api(object):
 		config = _read_config(config_file)
 
 		# server name + env
-		self.server_name = config.get('server', 'server_name')
-		self.server_env = os.environ.get('H4_ENV', 'local')
+		self.server = {\
+			'name': config.get('server', 'server_name'),\
+			'env' : os.environ.get('H4_ENV', 'local'),\
+		}
 
 		# dbg mesg
 		log.debug('Server4Api="%s", env="%s", config="%s" init',\
-			(self.server_name, self.server_env, config_file), priority=1)
+			(self.server['name'], self.server['env'], config_file), priority=1)
 
 		# db
-		self.__cursor = _db_init(config)
-		self.dql = self.__cursor.get('dql')
-		self.dml = self.__cursor.get('dml')
-
-		# todo: del
-		self._cursor = self.__cursor
+		self.__db_cursor(config)
 
 		# cache
 		self.cache = None
 		if 'memcache' in config.sections():
 
 			if not MEMCACHEWRAPPER:
-				log.error('memcachewrapper import error', priority=3)	
+				log.error('memcachewrapper import error', priority=3)
 			else:
 				self.cache = memcachewrapper.MemcacheWrapper(\
 					config.get('memcache', 'host'),\
 					config.getint('memcache', 'port'),\
-					self.server_name,\
+					self.server['name'],\
 					config.getint('memcache', 'debug'))
 
 		# response api
-		self.response = response_api.ResponseAPI(self.server_name)
+		self.response = response_api.ResponseAPI(self.server['name'])
 
+		# data init
 		self.data_init()
 
 		# dbg mesg
 		log.info('Server4Api="%s", env="%s", config="%s" init',\
-			(self.server_name, self.server_env, config_file), priority=2)
+			(self.server['name'], self.server['env'], config_file), priority=2)
+
+
+	def __db_cursor(self, config):
+		""" db cursor """
+
+		self.__cursor = _db_init(config)
+		self.dql = self.__cursor.get('dql')
+		self.dml = self.__cursor.get('dml')
+
+		# todo: del
+		self._cursor = self.__cursor
 
 
 	def data_init(self):
@@ -194,7 +211,7 @@ class Server4Api(object):
 
 	def db_dial_id(self, table_name='', col_id='', col_value='', order_by=None):
 		""" Convert data from table to strurcture {id:value} (max limit 1000) """
-		return self.__db_dial(table_name, col_id, col_value, 'id_value')
+		return self.__db_dial(table_name, col_id, col_value, 'id_value', order_by)
 
 	def db_dial_value(self, table_name='', col_id='', col_value='', order_by=None):
 		""" Convert data from table to strurcture {value:id} (max limit 1000) """
@@ -207,7 +224,7 @@ class Server4Api(object):
 		__order_by = ''
 		if order_by:
 			__order_by = ' ORDER BY `%s` ' % order_by
-			
+
 		# select data from table
 		found = self.db_execute_dql('SELECT `%s`, `%s` FROM %s %s LIMIT 1000' % \
 			(col_id, col_value, table_name, __order_by))
@@ -357,7 +374,8 @@ class Server4Api(object):
 			for param_name in value_dict.keys():
 				_def = def_dict.get(param_name)
 				if not _def:
-					raise ValueError(('Unknown parametr {param_name}').format(param_name=param_name))
+					raise ValueError(('Unknown parametr {param_name}').format(\
+						param_name=param_name))
 
 				param_type = _def.get('type', 'str')
 				param_value = value_dict.get(param_name)
@@ -365,34 +383,31 @@ class Server4Api(object):
 				if param_type in ('int', 'integer', 'number'):
 					validate_ret = validate_int(param_value, _def.get('min'),\
 						_def.get('max'), _def.get('req'), param_name)
-					continue
 
 				elif param_type == 'float':
 					validate_ret = validate_float(param_value, _def.get('min'),\
 						_def.get('max'), _def.get('req'), param_name)
-					continue
 
 				elif param_type in ('email', 'mail'):
 					validate_ret = validate_email(param_value, _def.get('req'),\
 						param_name)
-					continue
 
 				elif param_type == 'ip':
 					validate_ret = validate_ip(param_value, _def.get('req'),\
 						param_name)
-					continue
 
 				elif param_type == 'array':
 					validate_ret = validate_array(param_value, _def.get('array'),\
 						_def.get('req'), param_name)
-					continue
+
 				else:
 					validate_ret = validate_str(param_value, _def.get('min'),\
 						_def.get('max'), _def.get('req'), param_name)
 
 				if not validate_ret:
-					raise ValueError(('{name} is false validate').format(name=name))
-					
+					raise ValueError(('{param_name} is false validate').format(\
+						param_name=param_name))
+
 
 		except TypeError as type_err:
 			error_type = 'type_error'
@@ -403,10 +418,7 @@ class Server4Api(object):
 			error_msg = str(value_err)
 
 			# length error
-			for length_str in (' expected value less than ', ' expected value greater than ',\
-				' expected at least ', ' expected at most '):
-				if error_msg.find(length_str) > -1:
-					error_type = 'length_error'
+			error_type = _length_error(error_msg, error_type)
 
 		if error_type:
 			return self.response.bad_request(\

@@ -3,3 +3,9 @@ indent-string=\t
 
 [MASTER]
 init-hook='import sys; sys.path.append("/usr/local/lib/python3/dist-packages"); sys.path.append("server4_api/");'
+
+[TYPECHECK]
+ignored-modules=logni,mysqlwrapper,memcachewrapper
+
+[DESIGN]
+max-args=6
