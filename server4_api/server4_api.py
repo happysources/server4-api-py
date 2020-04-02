@@ -68,30 +68,8 @@ def _read_config(config_file):
 	return config
 
 
-def _db_init(config):
-	""" db init """
-
-	cursor = {}
-
-	if 'db' not in config.sections():
-		return cursor
-
-	if not MYSQLWRAPPER:
-		log.error('mysqlwrapper import error', priority=3)
-		return cursor
-
-	# read only cursor
-	cursor['dql'] = _db_cursor(config, 'dql')
-
-	# dml (modify) cursor
-	cursor['dml'] = _db_cursor(config, 'dml')
-
-	return cursor
-
-
-
-def _db_cursor(config=None, user_type='dql'):
-	""" db cursor """
+def _db_connect(config=None, user_type='dql'):
+	""" db connect """
 
 	if not config:
 		return None
@@ -118,7 +96,7 @@ def _db_cursor(config=None, user_type='dql'):
 	}
 
 	# db connect
-	database = mysqlwrapper.Connect(\
+	dbh = mysqlwrapper.Connect(\
 		user=db_user,\
 		passwd=db_passwd,\
 		db=db_db,\
@@ -126,7 +104,7 @@ def _db_cursor(config=None, user_type='dql'):
 		param=db_param)
 
 	# db cursor
-	return database.cursor()
+	return dbh
 
 
 
@@ -150,7 +128,9 @@ class Server4Api(object):
 			(self.server['name'], self.server['env'], config_file), priority=1)
 
 		# db
-		self.__db_cursor(config)
+		self.dql = None
+		self.dml = None
+		self.__db_init(config)
 
 		# cache
 		self.cache = None
@@ -176,15 +156,24 @@ class Server4Api(object):
 			(self.server['name'], self.server['env'], config_file), priority=2)
 
 
-	def __db_cursor(self, config):
-		""" db cursor """
+	def __db_init(self, config):
+		""" db init """
 
-		self.__cursor = _db_init(config)
-		self.dql = self.__cursor.get('dql')
-		self.dml = self.__cursor.get('dml')
+		if 'db' not in config.sections():
+			return False
+	
+		if not MYSQLWRAPPER:
+			log.error('mysqlwrapper import error', priority=3)
+			return False
 
-		# todo: del
-		self._cursor = self.__cursor
+		# dql (readonly)
+		self.dql = _db_connect(config, 'dql')
+
+		# dml (modify) 
+		self.dml = _db_connect(config, 'dml')
+
+
+		return True
 
 
 	def data_init(self):
@@ -226,14 +215,15 @@ class Server4Api(object):
 			__order_by = ' ORDER BY `%s` ' % order_by
 
 		# select data from table
-		found = self.db_execute_dql('SELECT `%s`, `%s` FROM %s %s LIMIT 1000' % \
+		cursor = self.dql.cursor()
+		found = cursor.execute('SELECT `%s`, `%s` FROM %s %s LIMIT 1000' % \
 			(col_id, col_value, table_name, __order_by))
 
 		if found == 0:
 			return {}
 
 		ret = {}
-		data = self.db_fetchall_dql()
+		data = cursor.fetchall()
 		for line in data:
 
 			if dial_type == 'id_value':
@@ -242,122 +232,8 @@ class Server4Api(object):
 
 			ret[line[col_id]] = line[col_value]
 
+		cursor.close()
 		return ret
-
-
-	# --- MYSQL DATABASE ---
-
-
-
-	def db_select(self, table_name, where_dict, column_list=(), limit=0):
-		""" db select """
-
-		if 'dql' not in self.__cursor:
-			log.error('mysql cursor="%s" not exist', ('dql',), priority=2)
-			return (0, None)
-
-		return self.__cursor['dql'].select(table_name, where_dict, column_list, limit)
-
-
-	def db_update(self, table_name, value_dict, where_dict, limit=0):
-		""" db update """
-
-		if 'dml' not in self.__cursor:
-			log.error('mysql cursor="%s" not exist', ('dml',), priority=2)
-			return 0
-
-		return self.__cursor['dml'].update(table_name, value_dict, where_dict, limit)
-
-
-	def db_insert(self, table_name, value_dict):
-		""" db insert """
-
-		if 'dml' not in self.__cursor:
-			log.error('mysql cursor="%s" not exist', ('dml',), priority=2)
-			return 0
-
-		return self.__cursor['dml'].insert(table_name, value_dict)
-
-	def db_replace(self, table_name, value_dict):
-		""" db replace """
-
-		if 'dml' not in self.__cursor:
-			log.error('mysql cursor="%s" not exist', ('dml',), priority=2)
-			return 0
-
-		return self.__cursor['dml'].replace(table_name, value_dict)
-
-	def db_insert_id(self):
-		""" db insert id """
-
-		if 'dml' not in self.__cursor:
-			log.error('mysql cursor="%s" not exist', ('dml',), priority=2)
-			return 0
-
-		return self.__cursor['dml'].insert_id()
-
-
-	def db_delete(self, table_name=None, where_dict=None, limit=0):
-		""" db delete """
-
-		if not where_dict:
-			where_dict = {}
-
-		if 'dml' not in self.__cursor:
-			log.error('mysql cursor="%s" not exist', ('dml',), priority=2)
-			return 0
-
-		return self.__cursor['dml'].delete(table_name, where_dict, limit)
-
-
-	def db_execute_dml(self, sql, param=()):
-		""" db sql """
-
-		if 'dml' not in self.__cursor:
-			log.error('mysql cursor="%s" not exist', ('dml',), priority=2)
-			return []
-
-		return self.__cursor['dml'].execute(sql, param)
-
-	def db_execute_dql(self, sql, param=()):
-		""" db sql """
-
-		if 'dql' not in self.__cursor:
-			log.error('mysql cursor="%s" not exist', ('dql',), priority=2)
-			return []
-
-		return self.__cursor['dql'].execute(sql, param)
-
-
-	def db_fetchall_dql(self):
-		""" db fetchall """
-
-		if 'dql' not in self.__cursor:
-			log.error('mysql cursor="%s" not exist', ('dql',), priority=2)
-			return []
-
-		return self.__cursor['dql'].fetchall()
-
-	def db_fetchone_dql(self):
-		""" db fetchall """
-
-		if 'dql' not in self.__cursor:
-			log.error('mysql cursor="%s" not exist', ('dql',), priority=2)
-			return []
-
-		return self.__cursor['dql'].fetchone()
-
-
-	def db_now(self):
-		""" db now """
-		self._pylint_fixed = 0
-		return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
-
-	def db_close(self):
-		""" db close """
-
-		for cursor_name in self.__cursor:
-			self.__cursor[cursor_name].close()
 
 
 	# --- INPUT PARAMS

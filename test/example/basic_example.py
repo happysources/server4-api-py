@@ -16,12 +16,15 @@ API = server4_api.Server4Api(config_file='test/example/serverapi.cfg')
 
 print()
 print('select:')
-pprint.pprint(API.db_select(table_name='test_table', where_dict={'id':1}, limit=5))
+CURSOR = API.dql.cursor()
+pprint.pprint(CURSOR.select(table_name='test_table', where_dict={'id':1}, limit=5))
 
 print()
 print('execute:')
-pprint.pprint(API.db_execute_dml('SELECT * FROM test_table LIMIT 5'))
-pprint.pprint(API.db_execute_dql('SELECT * FROM test_table LIMIT 5'))
+CURSOR1 = API.dql.cursor()
+CURSOR2 = API.dml.cursor()
+pprint.pprint(CURSOR1.execute('SELECT * FROM test_table LIMIT 1'))
+pprint.pprint(CURSOR2.execute('SELECT * FROM test_table LIMIT 2'))
 
 print()
 print('dial:')
