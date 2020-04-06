@@ -215,15 +215,13 @@ class Server4Api(object):
 			__order_by = ' ORDER BY `%s` ' % order_by
 
 		# select data from table
-		cursor = self.dql.cursor()
-		found = cursor.execute('SELECT `%s`, `%s` FROM %s %s LIMIT 1000' % \
+		found, data = self.dql.query('SELECT `%s`, `%s` FROM %s %s LIMIT 1000' % \
 			(col_id, col_value, table_name, __order_by))
 
 		if found == 0:
 			return {}
 
 		ret = {}
-		data = cursor.fetchall()
 		for line in data:
 
 			if dial_type == 'id_value':
@@ -232,7 +230,6 @@ class Server4Api(object):
 
 			ret[line[col_id]] = line[col_value]
 
-		cursor.close()
 		return ret
 
 
