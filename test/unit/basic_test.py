@@ -20,22 +20,22 @@ class TestServer4Api(unittest.TestCase):
 		""" select """
 
 		self.__init()
-		self.__api.db_select(table_name='test_table', where_dict={'id':1}, limit=5)
+		self.__api.dql.select(table_name='test_table', where_dict={'id':1}, limit=5)
 
 
 	def test_20_insert(self):
 		""" insert """
 
 		self.__init()
-		self.__api.db_insert(table_name='test_table', value_dict={'value_str':'aa', 'value_int':10})
-		self.__api.db_insert_id()
+		self.__api.dml.insert(table_name='test_table', value_dict={'value_str':'aa', 'value_int':10})
+		self.__api.dml.insert_id()
 
 
 	def test_30_delete(self):
 		""" delete """
 
 		self.__init()
-		self.__api.db_delete(table_name='test_table', where_dict={'id':10})
+		self.__api.dml.delete(table_name='test_table', where_dict={'id':10})
 
 
 	def test_40_response(self):
