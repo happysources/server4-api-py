@@ -93,6 +93,7 @@ def _db_connect(config=None, user_type='dql'):
 		'charset':config.get('db', 'charset'),\
 		'port':config.getint('db', 'port'),\
 		'debug':config.getint('db', 'debug'),\
+		'separate_connect': 1,\
 	}
 
 	# db connect
