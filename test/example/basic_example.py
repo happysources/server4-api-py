@@ -7,7 +7,7 @@ Example for Server API
 
 import sys
 import pprint
-sys.path.append('/usr/local/lib/python3/dist-packages')
+#sys.path.append('/usr/local/lib/python3/dist-packages')
 sys.path.append('server4_api')
 
 import server4_api

@@ -2,4 +2,4 @@ setuptools
 flask
 flask_restful
 sentry-sdk[flask]
-mysqlclient
+pymysql
